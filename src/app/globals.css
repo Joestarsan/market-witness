@@ -1,26 +1,114 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  /* Official Pyth brand colors */
+  --color-pyth-purple: #6d28d9;
+  --color-pyth-purple-dark: #4c1d95;
+  --color-pyth-purple-light: #8b5cf6;
+  --color-pyth-teal: #0ed28d;
+  --color-pyth-magenta: #ea2eff;
+  --color-pyth-orange: #f97316;
+  /* App colors */
+  --color-pyth-bg: #130f25;
+  --color-pyth-bg-card: #1a1535;
+  --color-pyth-bg-panel: #16122c;
+  --color-pyth-border: #2d2655;
+  --color-pyth-text: #e8e0ff;
+  --color-pyth-text-dim: #8b83aa;
+  --color-pyth-gold: #f97316;
+  --color-pyth-red: #ef4444;
+  --color-pyth-green: #0ed28d;
+  --color-objection-red: #ef4444;
+  --color-holdit-orange: #f97316;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-pyth-bg);
+  color: var(--color-pyth-text);
+  font-family: var(--font-pixel), monospace;
+  overflow-x: hidden;
+}
+
+/* Pixel-perfect rendering for sprites */
+.pixel-render {
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+/* Typewriter cursor blink */
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+.cursor-blink::after {
+  content: "▌";
+  animation: blink 0.7s infinite;
+}
+
+/* Screen shake */
+@keyframes shake {
+  0%, 100% { transform: translate(0); }
+  10% { transform: translate(-8px, -4px); }
+  20% { transform: translate(8px, 4px); }
+  30% { transform: translate(-6px, 2px); }
+  40% { transform: translate(6px, -2px); }
+  50% { transform: translate(-4px, 4px); }
+  60% { transform: translate(4px, -4px); }
+  70% { transform: translate(-2px, 2px); }
+  80% { transform: translate(2px, -2px); }
+}
+
+.shake {
+  animation: shake 0.5s ease-in-out;
+}
+
+/* Flash effect */
+@keyframes flash {
+  0% { opacity: 1; }
+  50% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+.flash {
+  animation: flash 0.15s ease-in-out 2;
+}
+
+/* Scanline overlay for retro feel */
+.scanlines::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.08) 2px,
+    rgba(0, 0, 0, 0.08) 4px
+  );
+  pointer-events: none;
+  z-index: 50;
+}
+
+/* Dialogue box border pixel style */
+.dialogue-box {
+  border: 4px solid var(--color-pyth-purple);
+  box-shadow:
+    inset 0 0 0 2px var(--color-pyth-bg),
+    inset 0 0 0 4px var(--color-pyth-purple-dark),
+    0 0 20px rgba(109, 40, 217, 0.3);
+}
+
+/* Evidence card glow */
+.evidence-glow {
+  box-shadow: 0 0 15px rgba(109, 40, 217, 0.5), 0 0 30px rgba(109, 40, 217, 0.2);
+}
+
+/* Objection text style */
+.objection-text {
+  text-shadow:
+    3px 3px 0 #000,
+    -1px -1px 0 #000,
+    1px -1px 0 #000,
+    -1px 1px 0 #000;
 }
