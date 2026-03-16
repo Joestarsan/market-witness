@@ -1,65 +1,146 @@
-import Image from "next/image";
+"use client";
+
+import { useState } from "react";
+import TradeInput, { type TradeData } from "@/components/TradeInput";
+import Trial, { type TrialResult } from "@/components/Trial";
+import Verdict from "@/components/Verdict";
+import { collectTradeEvidence } from "@/lib/pyth";
+import { generateMockTrial } from "@/lib/mockTrial";
+import { generateAITrial } from "@/lib/ai";
+
+type Phase = "input" | "loading" | "trial" | "verdict";
 
 export default function Home() {
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+  const [phase, setPhase] = useState<Phase>("input");
+  const [tradeData, setTradeData] = useState<TradeData | null>(null);
+  const [trialResult, setTrialResult] = useState<TrialResult | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [loadingMsg, setLoadingMsg] = useState("Querying Pyth Oracle Network...");
+
+  const handleTradeSubmit = async (trade: TradeData) => {
+    setTradeData(trade);
+    setPhase("loading");
+    setError(null);
+    setLoadingMsg("Querying Pyth Oracle Network...");
+
+    try {
+      const evidence = await collectTradeEvidence(
+        trade.feedId,
+        trade.openTimestamp,
+        trade.closeTimestamp
+      );
+
+      const exitPrice = evidence.closePrice ?? evidence.nowPrice;
+
+      // Try AI first, fallback to mock
+      let result: TrialResult;
+      try {
+        setLoadingMsg("AI is preparing the trial...");
+        result = await generateAITrial({
+          asset: trade.asset,
+          action: trade.action,
+          entryPrice: evidence.entryPrice,
+          exitPrice,
+          pricePctChange: evidence.pricePctChange,
+          entryConf: evidence.entryConf,
+          confPctOfPrice: evidence.confPctOfPrice,
+          entryEma: evidence.entryEma,
+          emaDivergence: evidence.emaDivergence,
+          entryEmaConf: evidence.entryEmaConf,
+          emaConfRatio: evidence.emaConfRatio,
+          nowConf: evidence.nowConf,
+          isClosed: evidence.isClosed,
+          closePrice: evidence.closePrice,
+          closePnl: evidence.closePnl,
+          missedPnl: evidence.missedPnl,
+        });
+      } catch (aiErr) {
+        console.warn("AI failed, using mock trial:", aiErr);
+        result = generateMockTrial(trade.asset, trade.action, evidence);
+      }
+
+      setTrialResult(result);
+      setPhase("trial");
+    } catch (err) {
+      console.error("Failed to collect evidence:", err);
+      setError(
+        "Failed to fetch oracle data. Try a more recent date (Pyth historical data may be limited)."
+      );
+      setPhase("input");
+    }
+  };
+
+  const handleTrialComplete = () => {
+    setPhase("verdict");
+  };
+
+  const handleRetry = () => {
+    setTradeData(null);
+    setTrialResult(null);
+    setPhase("input");
+  };
+
+  if (phase === "input") {
+    return (
+      <>
+        <TradeInput onSubmit={handleTradeSubmit} />
+        {error && (
+          <div className="fixed bottom-4 left-1/2 -translate-x-1/2 max-w-md p-3 bg-pyth-red/10 border border-pyth-red/30 rounded-lg text-center">
+            <p className="text-[10px] font-[var(--font-pixel)] text-pyth-red">
+              {error}
+            </p>
+          </div>
+        )}
+      </>
+    );
+  }
+
+  if (phase === "loading") {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="mb-6">
+            <span className="font-[var(--font-pixel)] text-pyth-purple-light text-sm animate-pulse">
+              Collecting evidence...
+            </span>
+          </div>
+          <div className="flex gap-2 justify-center mb-4">
+            {[0, 1, 2].map((i) => (
+              <div
+                key={i}
+                className="w-3 h-3 bg-pyth-purple rounded-full animate-bounce"
+                style={{ animationDelay: `${i * 0.15}s` }}
+              />
+            ))}
+          </div>
+          <p className="text-[8px] text-pyth-text-dim font-[var(--font-pixel)]">
+            {loadingMsg}
           </p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
-  );
+      </div>
+    );
+  }
+
+  if (phase === "trial" && trialResult && tradeData) {
+    return (
+      <Trial
+        result={trialResult}
+        asset={tradeData.asset}
+        onComplete={handleTrialComplete}
+      />
+    );
+  }
+
+  if (phase === "verdict" && trialResult && tradeData) {
+    return (
+      <Verdict
+        result={trialResult}
+        asset={tradeData.asset}
+        action={tradeData.action}
+        onRetry={handleRetry}
+      />
+    );
+  }
+
+  return null;
 }
