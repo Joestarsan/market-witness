@@ -2,46 +2,46 @@
 
 **Your trades will be judged.**
 
-An interactive courtroom experience where your trading decisions are put on trial using real-time oracle data from [Pyth Network](https://pyth.network). Enter a trade, watch a dramatic prosecution vs defense battle unfold, and receive a verdict — all powered by live Pyth price feeds.
+An interactive courtroom experience where your trading decisions are put on trial using real-time oracle data from [Pyth Network](https://pyth.network). Enter a trade, watch a dramatic prosecution vs defense battle unfold, and receive a verdict. All evidence sourced live from Pyth price feeds.
 
 Built for the [Pyth Playground Community Hackathon](https://dev-forum.pyth.network/t/terms-conditions/527).
 
 ## How It Works
 
-1. **Enter your trade** — Search any asset from Pyth's 500+ price feeds (crypto, forex, metals, equities). Select buy/sell, entry date, and exit date.
-2. **Watch the trial** — An AI-powered courtroom drama plays out. The Prosecutor argues against your trade using real Pyth oracle evidence. The Defense fights back with counter-evidence. Each round reveals a different Pyth data point.
-3. **Hear the verdict** — The Judge delivers a ruling based on all oracle evidence. Guilty or Not Guilty. View the full evidence breakdown.
+1. **Enter your trade** - Search any asset from Pyth's 500+ price feeds (crypto, forex, metals, equities). Select buy/sell, entry date, and exit date.
+2. **Watch the trial** - An AI-powered courtroom drama plays out. The Prosecutor argues against your trade using real Pyth oracle evidence. The Defense fights back with counter-evidence. Each round reveals a different Pyth data point.
+3. **Hear the verdict** - The Judge delivers a ruling based on all oracle evidence. Guilty or Not Guilty. View the full evidence breakdown.
 
 ## Pyth Network Integration
 
-This project deeply integrates **3 Pyth products** as core mechanics, not just data display:
+This project integrates **5 distinct Pyth features** as core game mechanics, not just data display:
 
-### Price Feeds (Core Evidence Engine)
-- **Price + Confidence Intervals** — Confidence width at entry is used as prosecution evidence ("the oracle was uncertain!")
-- **EMA Price** — Trend divergence between spot and EMA determines if the trade was with or against the trend
-- **EMA Confidence** — Ratio of EMA conf to spot conf reveals shifting market conditions
-- Historical price lookups via Hermes API for both trade open and close timestamps
+### 1. Price Feeds
+Real-time and historical price data via Hermes API. Used to calculate P&L, compare entry vs exit, and determine trade outcome. Supports all 500+ Pyth feeds across crypto, forex, metals, and equities.
 
-### Pyth Pro / Benchmarks (Deep Analysis)
-- Historical OHLC data for contextual analysis
-- Minute-level granularity for precise entry/exit evaluation
-- Supports all asset classes: crypto, forex, metals, equities
+### 2. Confidence Intervals
+The width of `conf` at trade entry becomes prosecution evidence. A wide confidence interval means publishers disagreed on the true price, which the Prosecutor uses to argue the trade was reckless. A tight interval helps the Defense prove it was a quality entry.
 
-### AI Integration with Pyth Data
-- All Pyth data points are fed to an AI model that generates dramatic courtroom dialogue
-- Each prosecution/defense argument references specific Pyth metrics
-- The verdict is computed from actual oracle data quality, not random
+### 3. EMA (Exponential Moving Average)
+`ema_price` divergence from spot price reveals whether the trader entered with or against the prevailing trend. The Prosecutor uses counter-trend entries as evidence of poor judgment. The Defense uses trend-aligned entries as proof of skill.
+
+### 4. EMA Confidence
+The ratio of `ema_conf` to spot `conf` shows whether market conditions were stable or deteriorating. A growing ratio means uncertainty was increasing, which adds another layer of evidence to the trial.
+
+### 5. Pyth Pro / Benchmarks API
+Historical OHLC data with minute-level granularity for precise entry/exit evaluation. Provides deeper context around the trade: what happened before, during, and after.
 
 ## Pyth Features Used as "Evidence"
 
-| Evidence | Pyth Source | How It's Used |
+| Evidence | Pyth Source | Role in Trial |
 |----------|-------------|---------------|
 | Price at entry vs exit | Price Feeds | Core P&L calculation |
-| Confidence interval width | Price Feeds — `conf` | Market uncertainty at trade time |
-| EMA price divergence | Price Feeds — `ema_price` | Was trade with or against trend? |
-| EMA confidence ratio | Price Feeds — `ema_conf` | Were conditions stable or shifting? |
-| Exit timing analysis | Price Feeds (historical) | Closed too early? Too late? |
-| Current market state | Price Feeds (latest) | How has the market moved since? |
+| Confidence interval width | `conf` field | Market uncertainty at trade time |
+| EMA price divergence | `ema_price` field | With or against trend? |
+| EMA confidence trend | `ema_conf` field | Stable or shifting conditions? |
+| Exit timing analysis | Historical lookups | Closed too early? Too late? |
+| Post-trade movement | Latest price | Missed opportunity analysis |
+| Historical context | Pyth Pro Benchmarks | OHLC around trade timestamp |
 
 ## Tech Stack
 
@@ -80,8 +80,8 @@ NEXT_PUBLIC_OPENROUTER_API_KEY=your_openrouter_key
 PYTH_PRO_API_KEY=your_pyth_pro_key
 ```
 
-- **OpenRouter API Key** — Get one at [openrouter.ai](https://openrouter.ai) (used for AI-generated trial dialogue)
-- **Pyth Pro API Key** — Request from Pyth Network (used for historical benchmark data)
+- **OpenRouter API Key** - Get one at [openrouter.ai](https://openrouter.ai). Used for AI-generated trial dialogue.
+- **Pyth Pro API Key** - Request from Pyth Network. Used for historical benchmark data.
 
 > The app works without API keys using mock trial generation and free Hermes API, but AI dialogue and Pyth Pro data require keys.
 
@@ -126,13 +126,14 @@ User inputs trade
   - Historical price at open/close
   - Current price
   - Confidence intervals
-  - EMA data
+  - EMA price + EMA confidence
        |
        v
   Evidence Collection
   - P&L calculation
-  - Confidence % of price
-  - EMA divergence
+  - Confidence as % of price
+  - EMA divergence from spot
+  - EMA conf ratio (stability)
   - Exit timing analysis
        |
        v
@@ -154,15 +155,15 @@ User inputs trade
 
 ## What Makes It Creative
 
-- **Pyth data as game mechanic** — Confidence intervals, EMA divergence, and publisher consensus are the evidence in a courtroom drama, not just numbers on a dashboard
-- **Oracle metadata as narrative** — Each Pyth data point drives a round of prosecution vs defense arguments
-- **Gamified education** — Users learn what confidence intervals and EMA actually mean through an engaging courtroom metaphor
-- **Universal asset coverage** — Works with any of Pyth's 500+ price feeds across crypto, forex, metals, and equities
-- **Full trade lifecycle** — Analyzes both entry AND exit, including "missed opportunity" after closing
+- **Pyth data as game mechanic** - Confidence intervals, EMA divergence, and price history are the evidence in a courtroom drama, not just numbers on a dashboard
+- **Oracle metadata as narrative** - Each Pyth data point drives a round of prosecution vs defense arguments
+- **Gamified education** - Users learn what confidence intervals and EMA actually mean through an engaging courtroom format
+- **Universal asset coverage** - Works with any of Pyth's 500+ price feeds across crypto, forex, metals, and equities
+- **Full trade lifecycle** - Analyzes both entry AND exit, including missed opportunity after closing
 
 ## Answer Capsule
 
-The Market Witness uses Pyth Price Feeds as courtroom evidence in an interactive trial. Confidence intervals become uncertainty evidence, EMA divergence reveals trend-fighting, and historical prices prove P&L. Each Pyth data point drives a prosecution/defense round, turning oracle data into dramatic narrative. AI generates unique dialogue from real Pyth metrics for every trade.
+The Market Witness transforms Pyth oracle data into courtroom evidence. Confidence intervals become uncertainty proof, EMA divergence reveals trend-fighting, historical prices establish P&L, and EMA confidence ratios expose shifting conditions. Each of the 5 Pyth data points drives a prosecution/defense round, turning raw oracle feeds into interactive dramatic narrative with AI-generated dialogue.
 
 ## License
 
