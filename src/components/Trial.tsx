@@ -147,7 +147,7 @@ export default function Trial({ result, asset, onComplete }: TrialProps) {
 
   // Handle advance to next round
   const handleAdvance = useCallback(() => {
-    if (isTyping || currentRound < 0) return;
+    if (isTyping || currentRound < 0 || !showCurrentEvidence || trialDone) return;
 
     const round = result.rounds[currentRound];
 
@@ -170,7 +170,7 @@ export default function Trial({ result, asset, onComplete }: TrialProps) {
       // All rounds done
       setTrialDone(true);
     }
-  }, [isTyping, currentRound, result.rounds]);
+  }, [isTyping, currentRound, result.rounds, showCurrentEvidence, trialDone]);
 
   // Keyboard listener for advancing
   useEffect(() => {
@@ -452,7 +452,7 @@ export default function Trial({ result, asset, onComplete }: TrialProps) {
               animate={{ opacity: [0.3, 1, 0.3] }}
               transition={{ duration: 1.5, repeat: Infinity }}
               className="text-center py-2 cursor-pointer"
-              onClick={handleAdvance}
+              onClick={(e) => { e.stopPropagation(); handleAdvance(); }}
             >
               <span className="text-[9px] font-[var(--font-pixel)] text-pyth-text-dim">
                 ▶ Tap or press Space to continue...
