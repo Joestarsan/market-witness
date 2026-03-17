@@ -45,8 +45,8 @@ export function generateMockTrial(
       type: "prosecution",
       label: "Entry Analysis",
       text: tradeProfitable
-        ? `The defendant chose to ${action.toLowerCase()} ${asset} at $${evidence.entryPrice.toFixed(2)}. The price has since moved ${Math.abs(evidence.pricePctChange).toFixed(2)}% in their favor. But was this skill — or pure luck? The Pyth oracle data will reveal the truth!`
-        : `The defendant chose to ${action.toLowerCase()} ${asset} at $${evidence.entryPrice.toFixed(2)}. The price moved ${Math.abs(evidence.pricePctChange).toFixed(2)}% against them. This trade is clearly underwater. The Pyth data doesn't lie, Your Honor!`,
+        ? `The defendant ${action.toLowerCase() === "buy" ? "bought" : "sold"} ${asset} at $${evidence.entryPrice.toFixed(2)} and it moved ${Math.abs(evidence.pricePctChange).toFixed(2)}% in their favor. Skill or pure luck? Let the data decide!`
+        : `The defendant ${action.toLowerCase() === "buy" ? "bought" : "sold"} ${asset} at $${evidence.entryPrice.toFixed(2)} and it's down ${Math.abs(evidence.pricePctChange).toFixed(2)}%. This trade is underwater. The numbers don't lie!`,
       evidence: {
         label: "Price at Entry vs " + exitLabel,
         source: "Pyth Price Feeds",
@@ -61,14 +61,18 @@ export function generateMockTrial(
     {
       type: "defense",
       label: "Market Context",
-      text: tradeProfitable
-        ? `Your Honor, the Pyth EMA at entry was $${evidence.entryEma.toFixed(2)} — my client entered ${Math.abs(evidence.emaDivergence) < 0.5 ? "right at fair value" : "with a clear read on the trend"}. The ${Math.abs(evidence.pricePctChange).toFixed(2)}% profit proves this was a calculated move, not gambling!`
-        : `Your Honor, the Pyth EMA showed $${evidence.entryEma.toFixed(2)} at entry — only ${Math.abs(evidence.emaDivergence).toFixed(2)}% divergence. My client entered at a reasonable level. The subsequent move is within normal ${asset} volatility!`,
+      text: evidence.entryEma > 0
+        ? (tradeProfitable
+          ? `The moving average at entry was $${evidence.entryEma.toFixed(2)}. My client entered ${Math.abs(evidence.emaDivergence) < 0.5 ? "right at fair value" : "reading the trend correctly"}. The ${Math.abs(evidence.pricePctChange).toFixed(2)}% profit speaks for itself!`
+          : `The moving average showed $${evidence.entryEma.toFixed(2)} at entry, only ${Math.abs(evidence.emaDivergence).toFixed(2)}% divergence. Entry was at a reasonable level. This move is within normal ${asset} volatility!`)
+        : (tradeProfitable
+          ? `My client's ${Math.abs(evidence.pricePctChange).toFixed(2)}% profit proves this was a calculated move, not gambling. The result speaks louder than any indicator!`
+          : `The price moved against my client, yes. But a ${Math.abs(evidence.pricePctChange).toFixed(2)}% move is within normal ${asset} volatility. That's trading, not a crime!`),
       evidence: {
         label: "EMA Price at Entry",
         source: "Pyth Price Feeds — EMA",
-        value: `$${evidence.entryEma.toFixed(2)}`,
-        detail: `Divergence from spot: ${evidence.emaDivergence > 0 ? "+" : ""}${evidence.emaDivergence.toFixed(2)}%. ${Math.abs(evidence.emaDivergence) < 1 ? "Stable market." : "Active trend."}`,
+        value: evidence.entryEma > 0 ? `$${evidence.entryEma.toFixed(2)}` : "N/A",
+        detail: evidence.entryEma > 0 ? `Divergence from spot: ${evidence.emaDivergence > 0 ? "+" : ""}${evidence.emaDivergence.toFixed(2)}%. ${Math.abs(evidence.emaDivergence) < 1 ? "Stable market." : "Active trend."}` : "EMA data unavailable for this timestamp.",
         isPositive: !againstTrend,
         rawField: "ema_price",
         sampledAt: evidence.openTimestamp,
@@ -79,8 +83,8 @@ export function generateMockTrial(
       type: "prosecution",
       label: "Uncertainty Evidence",
       text: highUncertainty
-        ? `Exhibit B: the Pyth confidence interval was ±$${evidence.entryConf.toFixed(4)} — that's ${evidence.confPctOfPrice.toFixed(3)}% of the price! The oracle publishers DISAGREED on the true price. Trading during such chaos is reckless!`
-        : `The confidence was tight at ±$${evidence.entryConf.toFixed(4)}, yes. But price certainty is NOT directional certainty! The defendant confused knowing WHERE the price is with knowing WHERE it's going!`,
+        ? `The market spread was ${evidence.confPctOfPrice.toFixed(3)}% wide when this trade happened. That's massive uncertainty! Trading in that chaos is reckless.`
+        : `Sure, the spread was tight at ${evidence.confPctOfPrice.toFixed(3)}%. But knowing the exact price doesn't mean knowing the direction. Price certainty is not directional certainty!`,
       evidence: {
         label: "Confidence Interval at Entry",
         source: "Pyth Price Feeds — Confidence",
@@ -96,13 +100,13 @@ export function generateMockTrial(
       type: "defense",
       label: "Oracle Reliability",
       text: highUncertainty
-        ? `My client was AWARE of the uncertainty! The wider confidence band was factored into their position size. Risk management is not a crime — it's prudent trading!`
-        : `The tight Pyth confidence interval proves my client chose their moment carefully. When publishers are in consensus at ±$${evidence.entryConf.toFixed(4)}, that IS a quality entry. The oracle data was clean!`,
+        ? `My client knew the spread was wide and sized accordingly. That's risk management, not recklessness!`
+        : `The tight spread proves my client picked the perfect moment. Clean data, precise entry. That IS quality trading!`,
       evidence: {
         label: "EMA Confidence Trend",
         source: "Pyth Price Feeds — EMA Conf",
-        value: `±$${evidence.entryEmaConf.toFixed(4)}`,
-        detail: `Ratio: ${evidence.emaConfRatio.toFixed(2)}x. ${evidence.emaConfRatio < 1.2 ? "Stable." : "Shifting conditions."}`,
+        value: evidence.entryEmaConf > 0 ? `±$${evidence.entryEmaConf.toFixed(4)}` : "N/A",
+        detail: evidence.emaConfRatio !== 1 ? `Ratio: ${evidence.emaConfRatio.toFixed(2)}x. ${evidence.emaConfRatio < 1.2 ? "Stable." : "Shifting conditions."}` : "EMA confidence data unavailable for this timestamp.",
         isPositive: evidence.emaConfRatio < 1.5,
         rawField: "ema_conf",
         sampledAt: evidence.openTimestamp,
@@ -113,8 +117,8 @@ export function generateMockTrial(
       type: "prosecution",
       label: "Trend Evidence",
       text: againstTrend
-        ? `The Pyth EMA diverged ${Math.abs(evidence.emaDivergence).toFixed(2)}% from spot — the defendant traded AGAINST the prevailing trend! Counter-trend without conviction is textbook recklessness!`
-        : `Even trading with the trend, the defendant showed zero edge. EMA divergence of ${Math.abs(evidence.emaDivergence).toFixed(2)}% — they just followed the crowd. No alpha, just noise trading!`,
+        ? `The price was trending ${evidence.emaDivergence > 0 ? "up" : "down"} and the defendant went the other way. Counter-trend without a thesis is gambling!`
+        : `Even trading with the trend, there's zero edge here. Just following the crowd with ${Math.abs(evidence.emaDivergence).toFixed(2)}% divergence. No alpha, just noise!`,
       evidence: {
         label: "Trend Direction",
         source: "Pyth Price Feeds — EMA vs Spot",

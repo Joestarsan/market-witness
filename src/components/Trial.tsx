@@ -44,6 +44,7 @@ export default function Trial({ result, asset, onComplete }: TrialProps) {
   const [showCurrentEvidence, setShowCurrentEvidence] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const typeCleanupRef = useRef<(() => void) | null>(null);
+  const skipRef = useRef<{ text: string; onDone: () => void } | null>(null);
 
   const scrollToBottom = useCallback(() => {
     setTimeout(() => {
@@ -51,10 +52,22 @@ export default function Trial({ result, asset, onComplete }: TrialProps) {
     }, 100);
   }, []);
 
+  const skipTyping = useCallback(() => {
+    if (skipRef.current && isTyping) {
+      typeCleanupRef.current?.();
+      setDisplayingText(skipRef.current.text);
+      setIsTyping(false);
+      const onDone = skipRef.current.onDone;
+      skipRef.current = null;
+      onDone();
+    }
+  }, [isTyping]);
+
   const typeText = useCallback(
     (text: string, onDone: () => void) => {
       setIsTyping(true);
       setDisplayingText("");
+      skipRef.current = { text, onDone };
       let i = 0;
       const interval = setInterval(() => {
         if (i < text.length) {
@@ -67,7 +80,7 @@ export default function Trial({ result, asset, onComplete }: TrialProps) {
           setIsTyping(false);
           onDone();
         }
-      }, 22);
+      }, 15);
       typeCleanupRef.current = () => clearInterval(interval);
       return () => clearInterval(interval);
     },
@@ -162,7 +175,7 @@ export default function Trial({ result, asset, onComplete }: TrialProps) {
   // Keyboard listener for advancing
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (!isTyping && showCurrentEvidence && !trialDone) {
+      if (!isTyping && showCurrentEvidence && !trialDone && (e.key === " " || e.key === "Enter" || e.key === "ArrowRight")) {
         e.preventDefault();
         handleAdvance();
       }
@@ -245,7 +258,10 @@ export default function Trial({ result, asset, onComplete }: TrialProps) {
       )}
 
       {/* Chat area */}
-      <div className="flex-1 overflow-y-auto p-4 md:p-6">
+      <div className="flex-1 overflow-y-auto p-4 md:p-6" onClick={() => {
+        if (isTyping) skipTyping();
+        else if (showCurrentEvidence && !trialDone) handleAdvance();
+      }}>
         <div className="max-w-5xl mx-auto space-y-6">
           {/* Committed messages */}
           {messages.map((msg, i) => (
@@ -272,7 +288,7 @@ export default function Trial({ result, asset, onComplete }: TrialProps) {
                 <div className={`w-28 h-28 md:w-36 md:h-36 rounded-xl overflow-hidden border-3 ${
                   currentRoundData.type === "defense"
                     ? "border-pyth-green/50 shadow-lg shadow-pyth-green/10"
-                    : "border-pyth-green/20 opacity-70"
+                    : "border-pyth-green/20 opacity-70 hidden md:block"
                 }`}>
                   <Image
                     src={currentRoundData.type === "defense" ? "/characters/planck-v2.png" : "/characters/planck-react.png"}
@@ -344,7 +360,7 @@ export default function Trial({ result, asset, onComplete }: TrialProps) {
                           width={10}
                           height={10}
                         />
-                        <span className="text-[6px] font-[var(--font-pixel)] text-pyth-purple-light uppercase">
+                        <span className="text-[8px] font-[var(--font-pixel)] text-pyth-purple-light uppercase">
                           {currentRoundData.evidence.source}
                         </span>
                       </div>
@@ -368,12 +384,12 @@ export default function Trial({ result, asset, onComplete }: TrialProps) {
                       {(currentRoundData.evidence.rawField || currentRoundData.evidence.sampledAt) && (
                         <div className="mt-1.5 pt-1.5 border-t border-pyth-border/20 flex items-center gap-2 flex-wrap">
                           {currentRoundData.evidence.rawField && (
-                            <span className="text-[5px] font-[var(--font-pixel)] text-pyth-purple-light/60 bg-pyth-purple/10 px-1 py-0.5 rounded">
+                            <span className="text-[8px] font-[var(--font-pixel)] text-pyth-purple-light/60 bg-pyth-purple/10 px-1 py-0.5 rounded">
                               {currentRoundData.evidence.rawField}
                             </span>
                           )}
                           {currentRoundData.evidence.sampledAt && (
-                            <span className="text-[5px] font-[var(--font-pixel)] text-pyth-text-dim/50">
+                            <span className="text-[8px] font-[var(--font-pixel)] text-pyth-text-dim/50">
                               {new Date(currentRoundData.evidence.sampledAt * 1000).toLocaleString()}
                             </span>
                           )}
@@ -400,7 +416,7 @@ export default function Trial({ result, asset, onComplete }: TrialProps) {
                 <div className={`w-28 h-28 md:w-36 md:h-36 rounded-xl overflow-hidden border-3 ${
                   currentRoundData.type === "prosecution"
                     ? "border-pyth-red/50 shadow-lg shadow-pyth-red/10"
-                    : "border-pyth-red/20 opacity-70"
+                    : "border-pyth-red/20 opacity-70 hidden md:block"
                 }`}>
                   <Image
                     src={currentRoundData.type === "prosecution" ? "/characters/chop-v2.png" : "/characters/chop-react.png"}
@@ -448,8 +464,8 @@ export default function Trial({ result, asset, onComplete }: TrialProps) {
               className="text-center py-2 cursor-pointer"
               onClick={handleAdvance}
             >
-              <span className="text-[8px] font-[var(--font-pixel)] text-pyth-text-dim">
-                ▶ Press any key to continue...
+              <span className="text-[9px] font-[var(--font-pixel)] text-pyth-text-dim">
+                ▶ Tap or press Space to continue...
               </span>
             </motion.div>
           )}
@@ -603,7 +619,7 @@ function ChatBubble({ message }: { message: ChatMessage }) {
                 width={10}
                 height={10}
               />
-              <span className="text-[6px] font-[var(--font-pixel)] text-pyth-purple-light uppercase">
+              <span className="text-[8px] font-[var(--font-pixel)] text-pyth-purple-light uppercase">
                 {message.evidence.source}
               </span>
             </div>
@@ -625,12 +641,12 @@ function ChatBubble({ message }: { message: ChatMessage }) {
             {(message.evidence.rawField || message.evidence.sampledAt) && (
               <div className="mt-1.5 pt-1.5 border-t border-pyth-border/20 flex items-center gap-2 flex-wrap">
                 {message.evidence.rawField && (
-                  <span className="text-[5px] font-[var(--font-pixel)] text-pyth-purple-light/60 bg-pyth-purple/10 px-1 py-0.5 rounded">
+                  <span className="text-[8px] font-[var(--font-pixel)] text-pyth-purple-light/60 bg-pyth-purple/10 px-1 py-0.5 rounded">
                     {message.evidence.rawField}
                   </span>
                 )}
                 {message.evidence.sampledAt && (
-                  <span className="text-[5px] font-[var(--font-pixel)] text-pyth-text-dim/50">
+                  <span className="text-[8px] font-[var(--font-pixel)] text-pyth-text-dim/50">
                     {new Date(message.evidence.sampledAt * 1000).toLocaleString()}
                   </span>
                 )}

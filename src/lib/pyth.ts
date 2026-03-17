@@ -198,7 +198,15 @@ export async function collectTradeEvidence(
     fetches.push(fetchHistoricalPrice(feedId, closeTimestamp));
   }
 
-  const results = await Promise.all(fetches);
+  // Fetch benchmark in parallel with prices
+  const benchmarkPromise = symbol
+    ? fetchBenchmarkContext(symbol, openTimestamp)
+    : Promise.resolve(null);
+
+  const [results, benchmark] = await Promise.all([
+    Promise.all(fetches),
+    benchmarkPromise,
+  ]);
   const priceAtOpen = results[0];
   const currentPrice = results[1];
   const priceAtClose = closeTimestamp ? results[2] : null;
@@ -233,12 +241,6 @@ export async function collectTradeEvidence(
   const confPctOfPrice = entryPrice > 0 ? (entryConf / entryPrice) * 100 : 0;
   const emaDivergence = entryEma > 0 ? ((entryPrice - entryEma) / entryEma) * 100 : 0;
   const emaConfRatio = entryConf > 0 && entryEmaConf > 0 ? entryEmaConf / entryConf : 1;
-
-  // Fetch Pyth Pro Benchmarks context (non-blocking)
-  let benchmark: BenchmarkContext | null = null;
-  if (symbol) {
-    benchmark = await fetchBenchmarkContext(symbol, openTimestamp);
-  }
 
   return {
     entryPrice,

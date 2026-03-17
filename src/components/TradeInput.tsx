@@ -26,12 +26,15 @@ export default function TradeInput({ onSubmit }: TradeInputProps) {
   const [selectedAsset, setSelectedAsset] = useState("");
   const [selectedSymbol, setSelectedSymbol] = useState("");
   const [action, setAction] = useState<"BUY" | "SELL" | "">("");
-  const now = new Date();
-  now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-  const nowStr = now.toISOString().slice(0, 16);
+  const [nowStr] = useState(() => {
+    const d = new Date();
+    d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+    return d.toISOString().slice(0, 16);
+  });
   const [openDate, setOpenDate] = useState(nowStr);
   const [closeDate, setCloseDate] = useState("");
   const [stillOpen, setStillOpen] = useState(true);
+  const [validationError, setValidationError] = useState("");
 
   useEffect(() => {
     fetchPriceFeedList()
@@ -47,13 +50,24 @@ export default function TradeInput({ onSubmit }: TradeInputProps) {
   const handleSubmit = () => {
     if (!isReady) return;
 
+    setValidationError("");
     const openTs = Math.floor(new Date(openDate).getTime() / 1000);
-    if (isNaN(openTs) || openTs <= 0) return;
+    if (isNaN(openTs) || openTs <= 0) {
+      setValidationError("Invalid open date");
+      return;
+    }
 
     let closeTs: number | null = null;
     if (!stillOpen && closeDate) {
       closeTs = Math.floor(new Date(closeDate).getTime() / 1000);
-      if (isNaN(closeTs) || closeTs <= 0) return;
+      if (isNaN(closeTs) || closeTs <= 0) {
+        setValidationError("Invalid close date");
+        return;
+      }
+      if (closeTs <= openTs) {
+        setValidationError("Close date must be after open date");
+        return;
+      }
     }
 
     onSubmit({
@@ -110,6 +124,9 @@ export default function TradeInput({ onSubmit }: TradeInputProps) {
             <span className="text-pyth-text-dim text-[9px] font-[var(--font-pixel)]">Your trades will be judged</span>
             <Image src="/brand/pyth-logo-symbol-light.svg" alt="" width={16} height={16} />
           </motion.div>
+          <p className="text-pyth-text-dim/60 text-[11px] max-w-xs mx-auto leading-relaxed text-center mt-2">
+            Enter a trade and watch an Ace Attorney-style courtroom judge it using real oracle data
+          </p>
         </div>
 
         {/* Input Panel */}
@@ -177,7 +194,7 @@ export default function TradeInput({ onSubmit }: TradeInputProps) {
               type="datetime-local"
               value={openDate}
               onChange={(e) => setOpenDate(e.target.value)}
-              max={new Date().toISOString().slice(0, 16)}
+              max={nowStr}
               className="w-full h-10 bg-pyth-bg border border-pyth-border rounded px-3 text-pyth-text text-sm focus:border-pyth-purple focus:outline-none"
             />
           </div>
@@ -193,7 +210,7 @@ export default function TradeInput({ onSubmit }: TradeInputProps) {
                 value={closeDate}
                 onChange={(e) => { setCloseDate(e.target.value); setStillOpen(false); }}
                 min={openDate}
-                max={new Date().toISOString().slice(0, 16)}
+                max={nowStr}
                 disabled={stillOpen}
                 className={`w-full h-10 bg-pyth-bg border border-pyth-border rounded px-3 text-pyth-text text-sm focus:border-pyth-purple focus:outline-none ${stillOpen ? "opacity-40" : ""}`}
               />
@@ -210,6 +227,11 @@ export default function TradeInput({ onSubmit }: TradeInputProps) {
               </label>
             </div>
           </div>
+
+          {/* Validation error */}
+          {validationError && (
+            <p className="text-pyth-red text-[9px] font-[var(--font-pixel)] text-center">{validationError}</p>
+          )}
 
           {/* Submit */}
           <motion.button

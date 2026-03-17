@@ -89,7 +89,7 @@ export default function Verdict({ result, asset, action, onRetry }: VerdictProps
               <span className={`text-[7px] font-[var(--font-pixel)] block ${!isGuilty ? "text-pyth-green" : "text-pyth-text-dim"}`}>
                 PLANCK
               </span>
-              <span className="text-[6px] font-[var(--font-pixel)] text-pyth-text-dim block">DEFENSE</span>
+              <span className="text-[8px] font-[var(--font-pixel)] text-pyth-text-dim block">DEFENSE</span>
               <span className={`text-[8px] font-[var(--font-pixel)] mt-1 block ${!isGuilty ? "text-pyth-green" : "text-pyth-red"}`}>
                 {!isGuilty ? "WINS!" : "LOSES"}
               </span>
@@ -145,7 +145,7 @@ export default function Verdict({ result, asset, action, onRetry }: VerdictProps
               <span className={`text-[7px] font-[var(--font-pixel)] block ${isGuilty ? "text-pyth-red" : "text-pyth-text-dim"}`}>
                 CHOP
               </span>
-              <span className="text-[6px] font-[var(--font-pixel)] text-pyth-text-dim block">PROSECUTOR</span>
+              <span className="text-[8px] font-[var(--font-pixel)] text-pyth-text-dim block">PROSECUTOR</span>
               <span className={`text-[8px] font-[var(--font-pixel)] mt-1 block ${isGuilty ? "text-pyth-green" : "text-pyth-red"}`}>
                 {isGuilty ? "WINS!" : "LOSES"}
               </span>
@@ -267,7 +267,7 @@ export default function Verdict({ result, asset, action, onRetry }: VerdictProps
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 3.5 }}
+            transition={{ delay: 2 }}
             className="flex gap-3 mb-8"
           >
             <button
@@ -337,7 +337,7 @@ export default function Verdict({ result, asset, action, onRetry }: VerdictProps
                         {round.evidence.source}
                       </span>
                       <span
-                        className={`ml-auto text-[6px] font-[var(--font-pixel)] px-2 py-0.5 rounded ${
+                        className={`ml-auto text-[8px] font-[var(--font-pixel)] px-2 py-0.5 rounded ${
                           round.type === "prosecution"
                             ? "bg-pyth-red/20 text-pyth-red"
                             : "bg-pyth-green/20 text-pyth-green"

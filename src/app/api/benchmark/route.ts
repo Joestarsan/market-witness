@@ -16,6 +16,9 @@ export async function GET(req: NextRequest) {
   }
 
   const ts = parseInt(timestamp);
+  if (isNaN(ts) || ts < 0 || ts > Math.floor(Date.now() / 1000) + 86400) {
+    return NextResponse.json({ error: "Invalid timestamp" }, { status: 400 });
+  }
   const from = ts - 3600;
   const to = ts + 3600;
 
