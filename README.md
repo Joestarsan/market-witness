@@ -171,6 +171,7 @@ Licensed under [Apache License 2.0](LICENSE).
 
 ## Links
 
+- **Live Demo:** [market-witness.vercel.app](https://market-witness.vercel.app)
 - **GitHub:** [github.com/Joestarsan/market-witness](https://github.com/Joestarsan/market-witness)
 - **Pyth Network:** [pyth.network](https://pyth.network)
 - **Hackathon:** [Pyth Playground Community Hackathon](https://dev-forum.pyth.network/t/terms-conditions/527)
