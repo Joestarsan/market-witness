@@ -1,4 +1,4 @@
-// Web Audio API sound effects — no external files needed
+// Web Audio API sound effects
 
 let audioCtx: AudioContext | null = null;
 
@@ -9,164 +9,146 @@ function getCtx(): AudioContext {
   return audioCtx;
 }
 
-// Gavel slam
-export function playGavel() {
+// Helper: play a note
+function playNote(
+  freq: number,
+  type: OscillatorType,
+  volume: number,
+  startTime: number,
+  duration: number
+) {
   const ctx = getCtx();
   const osc = ctx.createOscillator();
   const gain = ctx.createGain();
   osc.connect(gain);
   gain.connect(ctx.destination);
+  osc.type = type;
+  osc.frequency.setValueAtTime(freq, startTime);
+  gain.gain.setValueAtTime(volume, startTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+  osc.start(startTime);
+  osc.stop(startTime + duration);
+}
 
-  osc.type = "square";
-  osc.frequency.setValueAtTime(150, ctx.currentTime);
-  osc.frequency.exponentialRampToValueAtTime(40, ctx.currentTime + 0.15);
-
-  gain.gain.setValueAtTime(0.6, ctx.currentTime);
-  gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
-
-  osc.start(ctx.currentTime);
-  osc.stop(ctx.currentTime + 0.3);
-
-  // Add noise burst
-  const bufferSize = ctx.sampleRate * 0.1;
+// Gavel slam
+export function playGavel() {
+  const ctx = getCtx();
+  const t = ctx.currentTime;
+  // Thud
+  playNote(150, "square", 0.5, t, 0.15);
+  playNote(80, "square", 0.4, t, 0.2);
+  // Noise burst
+  const bufferSize = ctx.sampleRate * 0.08;
   const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
   const data = buffer.getChannelData(0);
   for (let i = 0; i < bufferSize; i++) {
-    data[i] = (Math.random() * 2 - 1) * (1 - i / bufferSize);
+    data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / bufferSize, 2);
   }
   const noise = ctx.createBufferSource();
   noise.buffer = buffer;
   const noiseGain = ctx.createGain();
-  noiseGain.gain.setValueAtTime(0.3, ctx.currentTime);
-  noiseGain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
+  noiseGain.gain.setValueAtTime(0.25, t);
+  noiseGain.gain.exponentialRampToValueAtTime(0.001, t + 0.08);
   noise.connect(noiseGain);
   noiseGain.connect(ctx.destination);
-  noise.start(ctx.currentTime);
+  noise.start(t);
 }
 
 // Objection dramatic hit
 export function playObjection() {
   const ctx = getCtx();
-
-  // Sharp attack
-  const osc1 = ctx.createOscillator();
-  const gain1 = ctx.createGain();
-  osc1.connect(gain1);
-  gain1.connect(ctx.destination);
-  osc1.type = "sawtooth";
-  osc1.frequency.setValueAtTime(800, ctx.currentTime);
-  osc1.frequency.exponentialRampToValueAtTime(200, ctx.currentTime + 0.3);
-  gain1.gain.setValueAtTime(0.4, ctx.currentTime);
-  gain1.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4);
-  osc1.start(ctx.currentTime);
-  osc1.stop(ctx.currentTime + 0.4);
-
-  // Bass punch
-  const osc2 = ctx.createOscillator();
-  const gain2 = ctx.createGain();
-  osc2.connect(gain2);
-  gain2.connect(ctx.destination);
-  osc2.type = "square";
-  osc2.frequency.setValueAtTime(120, ctx.currentTime);
-  osc2.frequency.exponentialRampToValueAtTime(60, ctx.currentTime + 0.2);
-  gain2.gain.setValueAtTime(0.5, ctx.currentTime);
-  gain2.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.25);
-  osc2.start(ctx.currentTime);
-  osc2.stop(ctx.currentTime + 0.25);
+  const t = ctx.currentTime;
+  playNote(600, "sawtooth", 0.35, t, 0.15);
+  playNote(800, "square", 0.25, t + 0.02, 0.2);
+  playNote(100, "square", 0.4, t, 0.15);
 }
 
 // Hold it — rising tone
 export function playHoldIt() {
   const ctx = getCtx();
-
+  const t = ctx.currentTime;
   const osc = ctx.createOscillator();
   const gain = ctx.createGain();
   osc.connect(gain);
   gain.connect(ctx.destination);
   osc.type = "square";
-  osc.frequency.setValueAtTime(300, ctx.currentTime);
-  osc.frequency.exponentialRampToValueAtTime(600, ctx.currentTime + 0.15);
-  osc.frequency.setValueAtTime(600, ctx.currentTime + 0.15);
-  gain.gain.setValueAtTime(0.35, ctx.currentTime);
-  gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.35);
-  osc.start(ctx.currentTime);
-  osc.stop(ctx.currentTime + 0.35);
+  osc.frequency.setValueAtTime(400, t);
+  osc.frequency.linearRampToValueAtTime(700, t + 0.12);
+  gain.gain.setValueAtTime(0.3, t);
+  gain.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
+  osc.start(t);
+  osc.stop(t + 0.3);
 }
 
-// Typewriter click (single key)
+// Text pop - hand-crafted PCM waveform, 3 cycles of a 250Hz pop then silence
 export function playTypeClick() {
   const ctx = getCtx();
-  const bufferSize = ctx.sampleRate * 0.02;
-  const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+  const sampleRate = ctx.sampleRate;
+  const freq = 250 + Math.random() * 50;
+  const cycles = 3;
+  const samplesPerCycle = Math.floor(sampleRate / freq);
+  const totalSamples = samplesPerCycle * cycles;
+  const buffer = ctx.createBuffer(1, totalSamples, sampleRate);
   const data = buffer.getChannelData(0);
-  for (let i = 0; i < bufferSize; i++) {
-    data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / bufferSize, 3);
+
+  for (let i = 0; i < totalSamples; i++) {
+    // Square-ish wave with fast decay per cycle
+    const phase = (i % samplesPerCycle) / samplesPerCycle;
+    const cycleNum = Math.floor(i / samplesPerCycle);
+    const amp = 1 - cycleNum / cycles; // decay across cycles
+    data[i] = (phase < 0.5 ? 1 : -1) * amp * 0.12;
   }
+
   const source = ctx.createBufferSource();
   source.buffer = buffer;
-  const gain = ctx.createGain();
-  gain.gain.setValueAtTime(0.08, ctx.currentTime);
-  source.connect(gain);
-  gain.connect(ctx.destination);
+  source.connect(ctx.destination);
   source.start(ctx.currentTime);
 }
 
-// Victory jingle
+// Victory fanfare - triumphant ascending melody
 export function playVictory() {
   const ctx = getCtx();
-  const notes = [523, 659, 784, 1047]; // C5, E5, G5, C6
-  notes.forEach((freq, i) => {
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.type = "square";
-    osc.frequency.setValueAtTime(freq, ctx.currentTime + i * 0.12);
-    gain.gain.setValueAtTime(0, ctx.currentTime + i * 0.12);
-    gain.gain.linearRampToValueAtTime(0.25, ctx.currentTime + i * 0.12 + 0.02);
-    gain.gain.exponentialRampToValueAtTime(
-      0.01,
-      ctx.currentTime + i * 0.12 + 0.3
-    );
-    osc.start(ctx.currentTime + i * 0.12);
-    osc.stop(ctx.currentTime + i * 0.12 + 0.3);
+  const t = ctx.currentTime;
+  // C major fanfare: C-E-G-C (up), then held high C
+  const melody = [
+    { freq: 523, time: 0, dur: 0.15 },     // C5
+    { freq: 659, time: 0.15, dur: 0.15 },   // E5
+    { freq: 784, time: 0.3, dur: 0.15 },    // G5
+    { freq: 1047, time: 0.45, dur: 0.5 },   // C6 (held)
+  ];
+  melody.forEach(({ freq, time, dur }) => {
+    playNote(freq, "square", 0.2, t + time, dur);
+    // Add harmony
+    playNote(freq * 1.5, "triangle", 0.08, t + time, dur);
   });
+  // Final chord shimmer
+  playNote(1047, "triangle", 0.15, t + 0.45, 0.8);
+  playNote(1318, "sine", 0.08, t + 0.5, 0.7);
+  playNote(784, "triangle", 0.1, t + 0.45, 0.8);
 }
 
-// Guilty / defeat sound
+// Guilty / defeat sound - sad descending, minor key
 export function playGuilty() {
   const ctx = getCtx();
-  const notes = [400, 350, 300, 200]; // Descending
-  notes.forEach((freq, i) => {
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.type = "sawtooth";
-    osc.frequency.setValueAtTime(freq, ctx.currentTime + i * 0.2);
-    gain.gain.setValueAtTime(0, ctx.currentTime + i * 0.2);
-    gain.gain.linearRampToValueAtTime(0.2, ctx.currentTime + i * 0.2 + 0.02);
-    gain.gain.exponentialRampToValueAtTime(
-      0.01,
-      ctx.currentTime + i * 0.2 + 0.4
-    );
-    osc.start(ctx.currentTime + i * 0.2);
-    osc.stop(ctx.currentTime + i * 0.2 + 0.4);
+  const t = ctx.currentTime;
+  // Descending minor: E-C-A-F
+  const melody = [
+    { freq: 330, time: 0, dur: 0.3 },      // E4
+    { freq: 262, time: 0.3, dur: 0.3 },     // C4
+    { freq: 220, time: 0.6, dur: 0.3 },     // A3
+    { freq: 175, time: 0.9, dur: 0.6 },     // F3 (held, sad)
+  ];
+  melody.forEach(({ freq, time, dur }) => {
+    playNote(freq, "triangle", 0.2, t + time, dur);
   });
+  // Low rumble at the end
+  playNote(100, "sawtooth", 0.1, t + 1.0, 0.5);
 }
 
 // Dramatic reveal (for evidence card)
 export function playReveal() {
   const ctx = getCtx();
-  const osc = ctx.createOscillator();
-  const gain = ctx.createGain();
-  osc.connect(gain);
-  gain.connect(ctx.destination);
-  osc.type = "triangle";
-  osc.frequency.setValueAtTime(200, ctx.currentTime);
-  osc.frequency.exponentialRampToValueAtTime(800, ctx.currentTime + 0.1);
-  gain.gain.setValueAtTime(0.3, ctx.currentTime);
-  gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.2);
-  osc.start(ctx.currentTime);
-  osc.stop(ctx.currentTime + 0.2);
+  const t = ctx.currentTime;
+  playNote(300, "triangle", 0.2, t, 0.08);
+  playNote(600, "triangle", 0.15, t + 0.05, 0.15);
 }

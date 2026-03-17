@@ -17,6 +17,12 @@ interface TradeContext {
   closePrice: number | null;
   closePnl: number | null;
   missedPnl: number | null;
+  benchmark: {
+    periodHigh: number;
+    periodLow: number;
+    volatilityPct: number;
+    preTradeTrend: number;
+  } | null;
 }
 
 const SYSTEM_PROMPT = `You are the AI engine for "The Market Witness" — a courtroom drama game where trades are judged using real Pyth Oracle data.
@@ -60,6 +66,14 @@ ${emaAvailable ? `- Pyth EMA at Entry: $${fmt(context.entryEma)} (${context.emaD
 - EMA Confidence: ±$${fmt(context.entryEmaConf, 4)} (ratio: ${fmt(context.emaConfRatio)}x)` : "- Pyth EMA: Not available for this timestamp (use other evidence instead)"}
 - Current Confidence: ±$${fmt(context.nowConf, 4)}
 ${context.isClosed ? `- Trade P&L at Close: ${fmt(context.closePnl)}%\n- Price Move After Close: ${fmt(context.missedPnl)}%` : "- Position: STILL OPEN"}
+
+${context.benchmark ? `
+PYTH PRO BENCHMARKS DATA (2-hour window around trade):
+- Period High: $${fmt(context.benchmark.periodHigh)}
+- Period Low: $${fmt(context.benchmark.periodLow)}
+- Period Volatility: ${fmt(context.benchmark.volatilityPct)}%
+- Pre-trade Trend (1hr before): ${context.benchmark.preTradeTrend > 0 ? "+" : ""}${fmt(context.benchmark.preTradeTrend)}%
+Use this Pyth Pro Benchmarks data as additional evidence. Reference "Pyth Pro Benchmarks" as the source.` : ""}
 
 IMPORTANT: If any data shows "N/A", do NOT reference it. Use only available data points. Never show NaN in output.
 

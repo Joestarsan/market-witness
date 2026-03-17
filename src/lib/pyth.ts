@@ -1,4 +1,5 @@
 const HERMES_BASE = "https://hermes.pyth.network";
+const BENCHMARKS_BASE = "https://benchmarks.pyth.network";
 
 export interface PythPriceFeed {
   id: string;
@@ -152,14 +153,42 @@ export function parsePythPrice(price: string, expo: number): number {
   return Number(price) * Math.pow(10, expo);
 }
 
+// Pyth Pro Benchmarks - OHLC context around a timestamp
+export interface BenchmarkContext {
+  periodHigh: number;
+  periodLow: number;
+  periodOpen: number;
+  periodClose: number;
+  volatilityPct: number;
+  preTradeTrend: number; // % change in the hour before trade
+  candles: number;
+}
+
+export async function fetchBenchmarkContext(
+  symbol: string,
+  timestamp: number
+): Promise<BenchmarkContext | null> {
+  try {
+    const res = await fetch(
+      `/api/benchmark?symbol=${encodeURIComponent(symbol)}&timestamp=${timestamp}`
+    );
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.benchmark || null;
+  } catch (err) {
+    console.warn("Benchmarks API failed:", err);
+    return null;
+  }
+}
+
 // Collect evidence for open + optional close
 export async function collectTradeEvidence(
   feedId: string,
   openTimestamp: number,
-  closeTimestamp: number | null
+  closeTimestamp: number | null,
+  symbol?: string
 ) {
-  console.log("Collecting evidence:", { feedId, openTimestamp, closeTimestamp });
-  console.log("Open date:", new Date(openTimestamp * 1000).toISOString());
+  console.log("Collecting evidence:", { feedId, openTimestamp, closeTimestamp, symbol });
 
   const fetches: Promise<PythPriceUpdate>[] = [
     fetchHistoricalPrice(feedId, openTimestamp),
@@ -205,6 +234,12 @@ export async function collectTradeEvidence(
   const emaDivergence = entryEma > 0 ? ((entryPrice - entryEma) / entryEma) * 100 : 0;
   const emaConfRatio = entryConf > 0 && entryEmaConf > 0 ? entryEmaConf / entryConf : 1;
 
+  // Fetch Pyth Pro Benchmarks context (non-blocking)
+  let benchmark: BenchmarkContext | null = null;
+  if (symbol) {
+    benchmark = await fetchBenchmarkContext(symbol, openTimestamp);
+  }
+
   return {
     entryPrice,
     entryConf,
@@ -225,5 +260,6 @@ export async function collectTradeEvidence(
     openTimestamp,
     closeTimestamp,
     currentTimestamp: Math.floor(Date.now() / 1000),
+    benchmark,
   };
 }

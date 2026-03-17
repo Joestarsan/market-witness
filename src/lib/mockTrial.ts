@@ -19,6 +19,15 @@ export function generateMockTrial(
     closePnl: number | null;
     missedPnl: number | null;
     isClosed: boolean;
+    openTimestamp: number;
+    closeTimestamp: number | null;
+    currentTimestamp: number;
+    benchmark: {
+      periodHigh: number;
+      periodLow: number;
+      volatilityPct: number;
+      preTradeTrend: number;
+    } | null;
   }
 ): TrialResult {
   const isBuy = action === "BUY";
@@ -44,6 +53,8 @@ export function generateMockTrial(
         value: `${evidence.pricePctChange > 0 ? "+" : ""}${evidence.pricePctChange.toFixed(2)}%`,
         detail: `Entry: $${evidence.entryPrice.toFixed(2)} → ${exitLabel}: $${exitPrice.toFixed(2)}`,
         isPositive: tradeProfitable,
+        rawField: "price",
+        sampledAt: evidence.openTimestamp,
       },
     },
     // 2: Defense — EMA context
@@ -59,6 +70,8 @@ export function generateMockTrial(
         value: `$${evidence.entryEma.toFixed(2)}`,
         detail: `Divergence from spot: ${evidence.emaDivergence > 0 ? "+" : ""}${evidence.emaDivergence.toFixed(2)}%. ${Math.abs(evidence.emaDivergence) < 1 ? "Stable market." : "Active trend."}`,
         isPositive: !againstTrend,
+        rawField: "ema_price",
+        sampledAt: evidence.openTimestamp,
       },
     },
     // 3: Prosecution — Confidence
@@ -72,8 +85,10 @@ export function generateMockTrial(
         label: "Confidence Interval at Entry",
         source: "Pyth Price Feeds — Confidence",
         value: `±$${evidence.entryConf.toFixed(4)}`,
-        detail: `${evidence.confPctOfPrice.toFixed(3)}% of price. ${highUncertainty ? "HIGH uncertainty." : "LOW uncertainty — publishers agreed."}`,
+        detail: `${evidence.confPctOfPrice.toFixed(3)}% of price. ${highUncertainty ? "HIGH uncertainty." : "LOW uncertainty - publishers agreed."}`,
         isPositive: !highUncertainty,
+        rawField: "conf",
+        sampledAt: evidence.openTimestamp,
       },
     },
     // 4: Defense — Data quality
@@ -89,6 +104,8 @@ export function generateMockTrial(
         value: `±$${evidence.entryEmaConf.toFixed(4)}`,
         detail: `Ratio: ${evidence.emaConfRatio.toFixed(2)}x. ${evidence.emaConfRatio < 1.2 ? "Stable." : "Shifting conditions."}`,
         isPositive: evidence.emaConfRatio < 1.5,
+        rawField: "ema_conf",
+        sampledAt: evidence.openTimestamp,
       },
     },
     // 5: Prosecution — Trend
@@ -104,11 +121,58 @@ export function generateMockTrial(
         value: `${evidence.emaDivergence > 0 ? "+" : ""}${evidence.emaDivergence.toFixed(2)}%`,
         detail: againstTrend ? "COUNTER-TREND entry." : "TREND-ALIGNED entry.",
         isPositive: !againstTrend,
+        rawField: "ema_price vs price",
+        sampledAt: evidence.openTimestamp,
       },
     },
   ];
 
-  // 6: If trade is closed — analyze the exit
+  // Benchmark context round (Pyth Pro)
+  if (evidence.benchmark) {
+    const bm = evidence.benchmark;
+    const highVolatility = bm.volatilityPct > 2;
+    const preTrendAgainst = isBuy ? bm.preTradeTrend < -0.5 : bm.preTradeTrend > 0.5;
+
+    rounds.push({
+      type: "prosecution",
+      label: "Market Context",
+      text: highVolatility
+        ? `Pyth Pro Benchmarks reveal the 2-hour window around this trade had ${bm.volatilityPct.toFixed(2)}% volatility! The price swung from $${bm.periodLow.toFixed(2)} to $${bm.periodHigh.toFixed(2)}. Trading in such chaos without proper risk management is reckless!`
+        : preTrendAgainst
+        ? `Pyth Pro Benchmarks show the hour before this trade, the price was already moving ${bm.preTradeTrend > 0 ? "up" : "down"} ${Math.abs(bm.preTradeTrend).toFixed(2)}%. The defendant entered against the established short-term momentum!`
+        : `According to Pyth Pro Benchmarks, the 2-hour period showed only ${bm.volatilityPct.toFixed(2)}% volatility. In such a calm market, this trade had no meaningful edge to exploit!`,
+      evidence: {
+        label: "Period Volatility",
+        source: "Pyth Pro Benchmarks",
+        value: `${bm.volatilityPct.toFixed(2)}%`,
+        detail: `2hr OHLC range: $${bm.periodLow.toFixed(2)} - $${bm.periodHigh.toFixed(2)}. Pre-trade trend: ${bm.preTradeTrend > 0 ? "+" : ""}${bm.preTradeTrend.toFixed(2)}%`,
+        isPositive: false,
+        rawField: "OHLC high/low",
+        sampledAt: evidence.openTimestamp,
+      },
+    });
+
+    rounds.push({
+      type: "defense",
+      label: "Benchmark Defense",
+      text: highVolatility
+        ? `The high volatility shown by Pyth Pro Benchmarks actually proves my client read the market correctly! Volatility creates opportunity. The ${bm.volatilityPct.toFixed(2)}% range means there was real price action to capture!`
+        : !preTrendAgainst
+        ? `Pyth Pro Benchmarks confirm the pre-trade trend of ${bm.preTradeTrend > 0 ? "+" : ""}${bm.preTradeTrend.toFixed(2)}% was aligned with my client's position. They traded WITH the short-term momentum!`
+        : `The calm market conditions shown by Pyth Pro Benchmarks prove this was a low-risk environment. My client chose a stable moment to enter, minimizing downside risk!`,
+      evidence: {
+        label: "Pre-trade Momentum",
+        source: "Pyth Pro Benchmarks",
+        value: `${bm.preTradeTrend > 0 ? "+" : ""}${bm.preTradeTrend.toFixed(2)}%`,
+        detail: `1hr trend before trade. ${!preTrendAgainst ? "Aligned with position." : "Against position, but context matters."}`,
+        isPositive: !preTrendAgainst,
+        rawField: "OHLC open/close",
+        sampledAt: evidence.openTimestamp,
+      },
+    });
+  }
+
+  // If trade is closed — analyze the exit
   if (evidence.isClosed && evidence.closePrice && evidence.closePnl !== null && evidence.missedPnl !== null) {
     const closedTooEarly = isBuy
       ? evidence.missedPnl > 5
