@@ -6,7 +6,7 @@ import type { PythPriceFeed } from "@/lib/pyth";
 interface AssetSearchProps {
   feeds: PythPriceFeed[];
   value: string;
-  onChange: (feedId: string, label: string) => void;
+  onChange: (feedId: string, label: string, symbol: string) => void;
 }
 
 export default function AssetSearch({ feeds, value, onChange }: AssetSearchProps) {
@@ -63,7 +63,7 @@ export default function AssetSearch({ feeds, value, onChange }: AssetSearchProps
     setSelectedLabel(label);
     setQuery("");
     setOpen(false);
-    onChange(feed.id, label);
+    onChange(feed.id, label, feed.attributes.symbol || "");
   };
 
   return (
@@ -95,7 +95,7 @@ export default function AssetSearch({ feeds, value, onChange }: AssetSearchProps
           <button
             onClick={(e) => {
               e.stopPropagation();
-              onChange("", "");
+              onChange("", "", "");
               setSelectedLabel("");
               setQuery("");
             }}

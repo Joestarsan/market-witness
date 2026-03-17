@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import type { EvidenceData } from "./EvidenceCard";
-import { playObjection, playHoldIt, playReveal, playGavel } from "@/lib/sounds";
+import { playObjection, playHoldIt, playReveal, playGavel, playTypeClick } from "@/lib/sounds";
 
 export interface TrialRound {
   type: "prosecution" | "defense";
@@ -38,7 +38,7 @@ export default function Trial({ result, asset, onComplete }: TrialProps) {
   const [currentRound, setCurrentRound] = useState(-1); // -1 = intro
   const [displayingText, setDisplayingText] = useState("");
   const [isTyping, setIsTyping] = useState(false);
-  const [showCallout, setShowCallout] = useState<"OBJECTION!" | "HOLD IT!" | null>(null);
+  const [showCallout, setShowCallout] = useState<string | null>(null);
   const [shaking, setShaking] = useState(false);
   const [trialDone, setTrialDone] = useState(false);
   const [showCurrentEvidence, setShowCurrentEvidence] = useState(false);
@@ -60,6 +60,7 @@ export default function Trial({ result, asset, onComplete }: TrialProps) {
         if (i < text.length) {
           setDisplayingText(text.slice(0, i + 1));
           i++;
+          if (i % 8 === 0) playTypeClick();
           if (i % 20 === 0) scrollToBottom();
         } else {
           clearInterval(interval);
@@ -78,13 +79,13 @@ export default function Trial({ result, asset, onComplete }: TrialProps) {
     if (currentRound !== -1) return;
     playGavel();
     const cleanup = typeText(
-      `The court is now in session for the trial of the ${asset} trade. All evidence will be sourced from the Pyth Oracle Network. All rise!`,
+      `The court is now in session for the trial of the ${asset} trade. Both timestamps have been reconstructed from Pyth Pro historical records. All evidence will be sourced from Pyth Price Feeds and Pyth Pro Benchmarks. All rise!`,
       () => {
         // Commit intro message
         setMessages([
           {
             type: "judge",
-            text: `The court is now in session for the trial of the ${asset} trade. All evidence will be sourced from the Pyth Oracle Network. All rise!`,
+            text: `The court is now in session for the trial of the ${asset} trade. Both timestamps have been reconstructed from Pyth Pro historical records. All evidence will be sourced from Pyth Price Feeds and Pyth Pro Benchmarks. All rise!`,
           },
         ]);
         setDisplayingText("");
@@ -99,10 +100,13 @@ export default function Trial({ result, asset, onComplete }: TrialProps) {
     if (currentRound < 0 || currentRound >= result.rounds.length) return;
 
     const round = result.rounds[currentRound];
-    const callout = round.type === "prosecution" ? "OBJECTION!" : "HOLD IT!";
+    const prosecutionCallouts = ["OBJECTION!", "TAKE THAT!", "NOT SO FAST!"];
+    const defenseCallouts = ["HOLD IT!", "WAIT!", "I OBJECT!"];
+    const callouts = round.type === "prosecution" ? prosecutionCallouts : defenseCallouts;
+    const callout = callouts[currentRound % callouts.length];
 
     // Show callout + sound
-    setShowCallout(callout as "OBJECTION!" | "HOLD IT!");
+    setShowCallout(callout);
     setShaking(true);
     setShowCurrentEvidence(false);
     if (round.type === "prosecution") playObjection();
@@ -184,31 +188,65 @@ export default function Trial({ result, asset, onComplete }: TrialProps) {
       </div>
 
       {/* OBJECTION / HOLD IT overlay */}
-      <AnimatePresence>
-        {showCallout && (
-          <motion.div
-            initial={{ scale: 4, opacity: 0, rotate: -15 }}
-            animate={{ scale: 1, opacity: 1, rotate: 0 }}
-            exit={{ opacity: 0, scale: 0.5 }}
-            transition={{ type: "spring", damping: 10, stiffness: 180 }}
-            className="fixed inset-0 flex items-center justify-center z-40 bg-black/70"
+      {showCallout && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100vw",
+            height: "100vh",
+            zIndex: 9999,
+            pointerEvents: "none",
+            overflow: "hidden",
+          }}
+        >
+          {/* Glow flash */}
+          <div
+            style={{
+              position: "absolute",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              width: "120vmax",
+              height: "120vmax",
+              borderRadius: "50%",
+              background: currentRoundData?.type === "prosecution"
+                ? "radial-gradient(circle, rgba(239,68,68,0.4) 0%, transparent 60%)"
+                : "radial-gradient(circle, rgba(14,210,141,0.4) 0%, transparent 60%)",
+              animation: "fadeOut 1s forwards",
+            }}
+          />
+          {/* Callout badge - centered with no movement */}
+          <div
+            style={{
+              position: "absolute",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%) rotate(-2deg)",
+            }}
           >
-            <div
-              className={`px-10 py-6 rounded-lg skew-x-[-3deg] shadow-2xl ${
-                showCallout === "OBJECTION!" ? "bg-pyth-red" : "bg-pyth-orange"
+            <motion.div
+              initial={{ opacity: 0, scale: 0.3 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ type: "spring", damping: 15, stiffness: 300 }}
+              className={`px-16 py-10 rounded-2xl ${
+                currentRoundData?.type === "prosecution"
+                  ? "bg-pyth-red shadow-[0_0_100px_rgba(239,68,68,0.7)]"
+                  : "bg-pyth-green shadow-[0_0_100px_rgba(14,210,141,0.7)]"
               }`}
             >
-              <span className="font-[var(--font-pixel)] text-3xl md:text-5xl text-white objection-text">
+              <span className="font-[var(--font-pixel)] text-4xl md:text-7xl text-white objection-text whitespace-nowrap">
                 {showCallout}
               </span>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            </motion.div>
+          </div>
+        </div>
+      )}
 
       {/* Chat area */}
       <div className="flex-1 overflow-y-auto p-4 md:p-6">
-        <div className="max-w-3xl mx-auto space-y-4">
+        <div className="max-w-5xl mx-auto space-y-6">
           {/* Committed messages */}
           {messages.map((msg, i) => (
             <ChatBubble key={i} message={msg} />
@@ -216,13 +254,40 @@ export default function Trial({ result, asset, onComplete }: TrialProps) {
 
           {/* Currently typing message */}
           {displayingText && currentRoundData && (
-            <div
-              className={`flex ${
-                currentRoundData.type === "prosecution" ? "justify-end" : "justify-start"
-              }`}
-            >
+            <div className="flex gap-3 items-start">
+              {/* Left side: Defense speaking or reacting */}
+              <motion.div
+                animate={
+                  currentRoundData.type === "defense" && isTyping
+                    ? { scale: [1, 1.05, 1] }
+                    : { scale: 1 }
+                }
+                transition={
+                  currentRoundData.type === "defense" && isTyping
+                    ? { duration: 0.2, repeat: Infinity, ease: "easeInOut" }
+                    : {}
+                }
+                className="flex-shrink-0 mt-4 text-center"
+              >
+                <div className={`w-28 h-28 md:w-36 md:h-36 rounded-xl overflow-hidden border-3 ${
+                  currentRoundData.type === "defense"
+                    ? "border-pyth-green/50 shadow-lg shadow-pyth-green/10"
+                    : "border-pyth-green/20 opacity-70"
+                }`}>
+                  <Image
+                    src={currentRoundData.type === "defense" ? "/characters/planck-v2.png" : "/characters/planck-react.png"}
+                    alt="Planck"
+                    width={144}
+                    height={144}
+                    className="pixel-render w-full h-full object-cover"
+                  />
+                </div>
+                <span className={`text-[8px] font-[var(--font-pixel)] mt-1.5 block ${
+                  currentRoundData.type === "defense" ? "text-pyth-green" : "text-pyth-green/40"
+                }`}>DEFENSE</span>
+              </motion.div>
               <div
-                className={`max-w-[85%] md:max-w-[70%] ${
+                className={`max-w-[80%] md:max-w-[65%] ${
                   currentRoundData.type === "prosecution" ? "items-end" : "items-start"
                 }`}
               >
@@ -233,13 +298,13 @@ export default function Trial({ result, asset, onComplete }: TrialProps) {
                   }`}
                 >
                   <span
-                    className={`text-[8px] font-[var(--font-pixel)] uppercase ${
+                    className={`text-[10px] md:text-xs font-[var(--font-pixel)] uppercase ${
                       currentRoundData.type === "prosecution"
                         ? "text-pyth-red"
                         : "text-pyth-green"
                     }`}
                   >
-                    {currentRoundData.type === "prosecution" ? "Prosecutor" : "Defense"}
+                    {currentRoundData.type === "prosecution" ? "Chop" : "Planck"}
                   </span>
                   <span className="text-[7px] text-pyth-text-dim font-[var(--font-pixel)]">
                     {currentRoundData.label}
@@ -248,13 +313,13 @@ export default function Trial({ result, asset, onComplete }: TrialProps) {
 
                 {/* Bubble */}
                 <div
-                  className={`rounded-xl p-4 ${
+                  className={`rounded-xl p-5 md:p-6 ${
                     currentRoundData.type === "prosecution"
                       ? "bg-pyth-red/10 border border-pyth-red/30 rounded-tr-sm"
                       : "bg-pyth-green/10 border border-pyth-green/30 rounded-tl-sm"
                   }`}
                 >
-                  <p className="text-sm leading-relaxed text-pyth-text">
+                  <p className="text-base md:text-lg leading-relaxed text-pyth-text">
                     {displayingText}
                     {isTyping && <span className="cursor-blink" />}
                   </p>
@@ -288,7 +353,7 @@ export default function Trial({ result, asset, onComplete }: TrialProps) {
                           {currentRoundData.evidence.label}
                         </span>
                         <span
-                          className={`text-base font-bold ${
+                          className={`text-xl md:text-2xl font-bold ${
                             currentRoundData.evidence.isPositive
                               ? "text-pyth-green"
                               : "text-pyth-red"
@@ -300,10 +365,55 @@ export default function Trial({ result, asset, onComplete }: TrialProps) {
                       <p className="text-[9px] text-pyth-text-dim mt-1">
                         {currentRoundData.evidence.detail}
                       </p>
+                      {(currentRoundData.evidence.rawField || currentRoundData.evidence.sampledAt) && (
+                        <div className="mt-1.5 pt-1.5 border-t border-pyth-border/20 flex items-center gap-2 flex-wrap">
+                          {currentRoundData.evidence.rawField && (
+                            <span className="text-[5px] font-[var(--font-pixel)] text-pyth-purple-light/60 bg-pyth-purple/10 px-1 py-0.5 rounded">
+                              {currentRoundData.evidence.rawField}
+                            </span>
+                          )}
+                          {currentRoundData.evidence.sampledAt && (
+                            <span className="text-[5px] font-[var(--font-pixel)] text-pyth-text-dim/50">
+                              {new Date(currentRoundData.evidence.sampledAt * 1000).toLocaleString()}
+                            </span>
+                          )}
+                        </div>
+                      )}
                     </motion.div>
                   )}
                 </AnimatePresence>
               </div>
+              {/* Right side: Prosecution speaking or reacting */}
+              <motion.div
+                animate={
+                  currentRoundData.type === "prosecution" && isTyping
+                    ? { scale: [1, 1.05, 1] }
+                    : { scale: 1 }
+                }
+                transition={
+                  currentRoundData.type === "prosecution" && isTyping
+                    ? { duration: 0.2, repeat: Infinity, ease: "easeInOut" }
+                    : {}
+                }
+                className="flex-shrink-0 mt-4 text-center"
+              >
+                <div className={`w-28 h-28 md:w-36 md:h-36 rounded-xl overflow-hidden border-3 ${
+                  currentRoundData.type === "prosecution"
+                    ? "border-pyth-red/50 shadow-lg shadow-pyth-red/10"
+                    : "border-pyth-red/20 opacity-70"
+                }`}>
+                  <Image
+                    src={currentRoundData.type === "prosecution" ? "/characters/chop-v2.png" : "/characters/chop-react.png"}
+                    alt="Chop"
+                    width={144}
+                    height={144}
+                    className="pixel-render w-full h-full object-cover"
+                  />
+                </div>
+                <span className={`text-[8px] font-[var(--font-pixel)] mt-1.5 block ${
+                  currentRoundData.type === "prosecution" ? "text-pyth-red" : "text-pyth-red/40"
+                }`}>PROSECUTOR</span>
+              </motion.div>
             </div>
           )}
 
@@ -311,13 +421,16 @@ export default function Trial({ result, asset, onComplete }: TrialProps) {
           {displayingText && currentRound === -1 && (
             <div className="flex justify-center">
               <div className="max-w-[80%]">
-                <div className="flex items-center justify-center gap-2 mb-1">
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <div className="w-28 h-28 md:w-36 md:h-36 rounded-xl overflow-hidden border-3 border-pyth-purple/50">
+                    <Image src="/characters/pirb-v3.png" alt="PIRB" width={56} height={56} className="pixel-render w-full h-full object-cover" />
+                  </div>
                   <span className="text-[8px] font-[var(--font-pixel)] text-pyth-purple-light uppercase">
-                    Judge
+                    Judge PIRB
                   </span>
                 </div>
-                <div className="rounded-xl p-4 bg-pyth-purple/10 border border-pyth-purple/30">
-                  <p className="text-sm leading-relaxed text-pyth-text text-center">
+                <div className="rounded-xl p-5 md:p-6 bg-pyth-purple/10 border border-pyth-purple/30">
+                  <p className="text-base md:text-lg leading-relaxed text-pyth-text text-center">
                     {displayingText}
                     {isTyping && <span className="cursor-blink" />}
                   </p>
@@ -375,7 +488,7 @@ export default function Trial({ result, asset, onComplete }: TrialProps) {
 
       {/* Bottom progress bar */}
       <div className="sticky bottom-0 bg-pyth-bg-panel/95 backdrop-blur-sm border-t border-pyth-border px-4 py-3">
-        <div className="max-w-3xl mx-auto flex items-center gap-3">
+        <div className="max-w-5xl mx-auto flex items-center gap-3">
           <span className="text-[7px] font-[var(--font-pixel)] text-pyth-text-dim">
             Round {Math.min(currentRound + 1, result.rounds.length)}/{result.rounds.length}
           </span>
@@ -409,13 +522,16 @@ function ChatBubble({ message }: { message: ChatMessage }) {
         className="flex justify-center"
       >
         <div className="max-w-[80%]">
-          <div className="flex items-center justify-center gap-2 mb-1">
+          <div className="flex items-center justify-center gap-2 mb-2">
+            <div className="w-10 h-10 rounded-lg overflow-hidden border-2 border-pyth-purple/50">
+              <Image src="/characters/pirb-v3.png" alt="PIRB" width={40} height={40} className="pixel-render w-full h-full object-cover" />
+            </div>
             <span className="text-[8px] font-[var(--font-pixel)] text-pyth-purple-light uppercase">
-              Judge
+              Judge PIRB
             </span>
           </div>
-          <div className="rounded-xl p-4 bg-pyth-purple/10 border border-pyth-purple/30">
-            <p className="text-sm leading-relaxed text-pyth-text text-center">
+          <div className="rounded-xl p-5 md:p-6 bg-pyth-purple/10 border border-pyth-purple/30">
+            <p className="text-base md:text-lg leading-relaxed text-pyth-text text-center">
               {message.text}
             </p>
           </div>
@@ -430,9 +546,18 @@ function ChatBubble({ message }: { message: ChatMessage }) {
     <motion.div
       initial={{ opacity: 0, y: 10, x: isProsecution ? 20 : -20 }}
       animate={{ opacity: 1, y: 0, x: 0 }}
-      className={`flex ${isProsecution ? "justify-end" : "justify-start"}`}
+      className={`flex gap-3 ${isProsecution ? "justify-end" : "justify-start"}`}
     >
-      <div className={`max-w-[85%] md:max-w-[70%]`}>
+      {/* Defense avatar on left */}
+      {!isProsecution && (
+        <div className="flex-shrink-0 self-start mt-4 text-center">
+          <div className="w-28 h-28 md:w-36 md:h-36 rounded-xl overflow-hidden border-3 border-pyth-green/50">
+            <Image src="/characters/planck-v2.png" alt="Planck" width={80} height={80} className="pixel-render w-full h-full object-cover" />
+          </div>
+          <span className="text-[8px] font-[var(--font-pixel)] text-pyth-green mt-1.5 block">DEFENSE</span>
+        </div>
+      )}
+      <div className={`max-w-[80%] md:max-w-[65%]`}>
         {/* Speaker */}
         <div
           className={`flex items-center gap-2 mb-1 ${
@@ -440,11 +565,11 @@ function ChatBubble({ message }: { message: ChatMessage }) {
           }`}
         >
           <span
-            className={`text-[8px] font-[var(--font-pixel)] uppercase ${
+            className={`text-[10px] md:text-xs font-[var(--font-pixel)] uppercase ${
               isProsecution ? "text-pyth-red" : "text-pyth-green"
             }`}
           >
-            {isProsecution ? "Prosecutor" : "Defense"}
+            {isProsecution ? "Chop" : "Planck"}
           </span>
           {message.label && (
             <span className="text-[7px] text-pyth-text-dim font-[var(--font-pixel)]">
@@ -455,13 +580,13 @@ function ChatBubble({ message }: { message: ChatMessage }) {
 
         {/* Bubble */}
         <div
-          className={`rounded-xl p-4 ${
+          className={`rounded-xl p-5 md:p-6 ${
             isProsecution
               ? "bg-pyth-red/10 border border-pyth-red/30 rounded-tr-sm"
               : "bg-pyth-green/10 border border-pyth-green/30 rounded-tl-sm"
           }`}
         >
-          <p className="text-sm leading-relaxed text-pyth-text">{message.text}</p>
+          <p className="text-base md:text-lg leading-relaxed text-pyth-text">{message.text}</p>
         </div>
 
         {/* Evidence card */}
@@ -487,7 +612,7 @@ function ChatBubble({ message }: { message: ChatMessage }) {
                 {message.evidence.label}
               </span>
               <span
-                className={`text-base font-bold ${
+                className={`text-xl md:text-2xl font-bold ${
                   message.evidence.isPositive ? "text-pyth-green" : "text-pyth-red"
                 }`}
               >
@@ -497,9 +622,32 @@ function ChatBubble({ message }: { message: ChatMessage }) {
             <p className="text-[9px] text-pyth-text-dim mt-1">
               {message.evidence.detail}
             </p>
+            {(message.evidence.rawField || message.evidence.sampledAt) && (
+              <div className="mt-1.5 pt-1.5 border-t border-pyth-border/20 flex items-center gap-2 flex-wrap">
+                {message.evidence.rawField && (
+                  <span className="text-[5px] font-[var(--font-pixel)] text-pyth-purple-light/60 bg-pyth-purple/10 px-1 py-0.5 rounded">
+                    {message.evidence.rawField}
+                  </span>
+                )}
+                {message.evidence.sampledAt && (
+                  <span className="text-[5px] font-[var(--font-pixel)] text-pyth-text-dim/50">
+                    {new Date(message.evidence.sampledAt * 1000).toLocaleString()}
+                  </span>
+                )}
+              </div>
+            )}
           </div>
         )}
       </div>
+      {/* Prosecution avatar on right */}
+      {isProsecution && (
+        <div className="flex-shrink-0 self-start mt-4 text-center">
+          <div className="w-28 h-28 md:w-36 md:h-36 rounded-xl overflow-hidden border-3 border-pyth-red/50">
+            <Image src="/characters/chop-v2.png" alt="Chop" width={80} height={80} className="pixel-render w-full h-full object-cover" />
+          </div>
+          <span className="text-[8px] font-[var(--font-pixel)] text-pyth-red mt-1.5 block">PROSECUTOR</span>
+        </div>
+      )}
     </motion.div>
   );
 }

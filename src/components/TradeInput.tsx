@@ -9,6 +9,7 @@ import AssetSearch from "./AssetSearch";
 export interface TradeData {
   feedId: string;
   asset: string;
+  symbol: string; // Full Pyth symbol e.g. "Crypto.SOL/USD"
   action: "BUY" | "SELL";
   openTimestamp: number;
   closeTimestamp: number | null;
@@ -23,10 +24,14 @@ export default function TradeInput({ onSubmit }: TradeInputProps) {
   const [loading, setLoading] = useState(true);
   const [selectedFeed, setSelectedFeed] = useState("");
   const [selectedAsset, setSelectedAsset] = useState("");
+  const [selectedSymbol, setSelectedSymbol] = useState("");
   const [action, setAction] = useState<"BUY" | "SELL" | "">("");
-  const [openDate, setOpenDate] = useState("");
+  const now = new Date();
+  now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+  const nowStr = now.toISOString().slice(0, 16);
+  const [openDate, setOpenDate] = useState(nowStr);
   const [closeDate, setCloseDate] = useState("");
-  const [stillOpen, setStillOpen] = useState(false);
+  const [stillOpen, setStillOpen] = useState(true);
 
   useEffect(() => {
     fetchPriceFeedList()
@@ -54,6 +59,7 @@ export default function TradeInput({ onSubmit }: TradeInputProps) {
     onSubmit({
       feedId: selectedFeed,
       asset: selectedAsset,
+      symbol: selectedSymbol,
       action: action as "BUY" | "SELL",
       openTimestamp: openTs,
       closeTimestamp: closeTs,
@@ -124,9 +130,10 @@ export default function TradeInput({ onSubmit }: TradeInputProps) {
               <AssetSearch
                 feeds={feeds}
                 value={selectedFeed}
-                onChange={(feedId, label) => {
+                onChange={(feedId, label, symbol) => {
                   setSelectedFeed(feedId);
                   setSelectedAsset(label.split("/")[0] || "");
+                  setSelectedSymbol(symbol);
                 }}
               />
             )}

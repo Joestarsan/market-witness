@@ -27,7 +27,8 @@ export default function Home() {
       const evidence = await collectTradeEvidence(
         trade.feedId,
         trade.openTimestamp,
-        trade.closeTimestamp
+        trade.closeTimestamp,
+        trade.symbol
       );
 
       const exitPrice = evidence.closePrice ?? evidence.nowPrice;
@@ -53,6 +54,7 @@ export default function Home() {
           closePrice: evidence.closePrice,
           closePnl: evidence.closePnl,
           missedPnl: evidence.missedPnl,
+          benchmark: evidence.benchmark,
         });
       } catch (aiErr) {
         console.warn("AI failed, using mock trial:", aiErr);

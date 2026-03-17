@@ -54,71 +54,99 @@ export default function Verdict({ result, asset, action, onRetry }: VerdictProps
             transition={{ delay: 0.3 }}
             className="flex items-end justify-between mb-8 px-4 pt-8"
           >
-            {/* Defense — LEFT */}
+            {/* Defense — LEFT (Planck) */}
             <motion.div
               initial={{ x: -30, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
               transition={{ delay: 0.5 }}
               className="text-center"
             >
-              <div
-                className={`w-20 h-28 md:w-24 md:h-32 border-2 rounded-lg flex items-center justify-center mb-2 ${
+              <motion.div
+                animate={
                   !isGuilty
-                    ? "bg-pyth-green/20 border-pyth-green shadow-lg shadow-pyth-green/20"
-                    : "bg-pyth-bg-card border-pyth-border"
+                    ? { y: [0, -10, 0], scale: [1, 1.05, 1], rotate: [0, 3, -3, 0] }
+                    : { y: [0, 2, 0], scale: [1, 0.97, 1] }
+                }
+                transition={
+                  !isGuilty
+                    ? { duration: 0.8, repeat: Infinity, ease: "easeInOut" }
+                    : { duration: 2, repeat: Infinity, ease: "easeInOut" }
+                }
+                className={`w-28 h-28 md:w-36 md:h-36 border-3 rounded-xl overflow-hidden mb-2 ${
+                  !isGuilty
+                    ? "border-pyth-green shadow-[0_0_30px_rgba(14,210,141,0.4)]"
+                    : "border-pyth-border opacity-50 grayscale-[40%]"
                 }`}
               >
-                <span className="text-3xl md:text-4xl">
-                  {!isGuilty ? "😎" : "😰"}
-                </span>
-              </div>
-              <span
-                className={`text-[7px] font-[var(--font-pixel)] ${
-                  !isGuilty ? "text-pyth-green" : "text-pyth-text-dim"
-                }`}
-              >
+                <Image
+                  src={!isGuilty ? "/characters/planck-happy.png" : "/characters/planck-sad.png"}
+                  alt="Planck"
+                  width={144}
+                  height={144}
+                  className="pixel-render w-full h-full object-cover"
+                />
+              </motion.div>
+              <span className={`text-[7px] font-[var(--font-pixel)] block ${!isGuilty ? "text-pyth-green" : "text-pyth-text-dim"}`}>
+                PLANCK
+              </span>
+              <span className="text-[6px] font-[var(--font-pixel)] text-pyth-text-dim block">DEFENSE</span>
+              <span className={`text-[8px] font-[var(--font-pixel)] mt-1 block ${!isGuilty ? "text-pyth-green" : "text-pyth-red"}`}>
                 {!isGuilty ? "WINS!" : "LOSES"}
               </span>
             </motion.div>
 
-            {/* Judge — CENTER */}
+            {/* Judge — CENTER (PIRB) */}
             <motion.div
               initial={{ y: -20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.3 }}
-              className="text-center -mt-8"
+              className="text-center -mt-4"
             >
-              <div className="w-28 h-36 md:w-32 md:h-40 bg-pyth-purple/20 border-2 border-pyth-purple rounded-lg flex items-center justify-center mb-2 shadow-lg shadow-pyth-purple/20">
-                <span className="text-5xl md:text-6xl">⚖️</span>
+              <div className="w-32 h-32 md:w-40 md:h-40 border-3 border-pyth-purple rounded-xl overflow-hidden mb-2 shadow-[0_0_30px_rgba(109,40,217,0.4)]">
+                <Image src="/characters/pirb-v3.png" alt="PIRB" width={160} height={160} className="pixel-render w-full h-full object-cover" />
               </div>
-              <span className="text-[8px] text-pyth-purple-light font-[var(--font-pixel)]">
-                JUDGE
+              <span className="text-[8px] text-pyth-purple-light font-[var(--font-pixel)] block">
+                JUDGE PIRB
               </span>
             </motion.div>
 
-            {/* Prosecution — RIGHT */}
+            {/* Prosecution — RIGHT (Chop) */}
             <motion.div
               initial={{ x: 30, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
               transition={{ delay: 0.5 }}
               className="text-center"
             >
-              <div
-                className={`w-20 h-28 md:w-24 md:h-32 border-2 rounded-lg flex items-center justify-center mb-2 ${
+              <motion.div
+                animate={
                   isGuilty
-                    ? "bg-pyth-red/20 border-pyth-red shadow-lg shadow-pyth-red/20"
-                    : "bg-pyth-bg-card border-pyth-border"
+                    ? { y: [0, -10, 0], scale: [1, 1.05, 1], rotate: [0, -3, 3, 0] }
+                    : { y: [0, 2, 0], scale: [1, 0.97, 1] }
+                }
+                transition={
+                  isGuilty
+                    ? { duration: 0.8, repeat: Infinity, ease: "easeInOut" }
+                    : { duration: 2, repeat: Infinity, ease: "easeInOut" }
+                }
+                className={`w-28 h-28 md:w-36 md:h-36 border-3 rounded-xl overflow-hidden mb-2 ${
+                  isGuilty
+                    ? "border-pyth-red shadow-[0_0_30px_rgba(239,68,68,0.4)]"
+                    : "border-pyth-border opacity-50 grayscale-[40%]"
                 }`}
               >
-                <span className="text-3xl md:text-4xl">
-                  {isGuilty ? "😏" : "😤"}
-                </span>
-              </div>
-              <span
-                className={`text-[7px] font-[var(--font-pixel)] ${
-                  isGuilty ? "text-pyth-red" : "text-pyth-text-dim"
-                }`}
-              >
+                <Image
+                  src={isGuilty ? "/characters/chop-happy.png" : "/characters/chop-sad.png"}
+                  alt="Chop"
+                  width={144}
+                  height={144}
+                  className="pixel-render w-full h-full object-cover"
+                />
+              </motion.div>
+              <span className={`text-[7px] font-[var(--font-pixel)] block ${isGuilty ? "text-pyth-red" : "text-pyth-text-dim"}`}>
+                CHOP
+              </span>
+              <span className="text-[6px] font-[var(--font-pixel)] text-pyth-text-dim block">PROSECUTOR</span>
+              <span className={`text-[8px] font-[var(--font-pixel)] mt-1 block ${isGuilty ? "text-pyth-green" : "text-pyth-red"}`}>
                 {isGuilty ? "WINS!" : "LOSES"}
               </span>
             </motion.div>
