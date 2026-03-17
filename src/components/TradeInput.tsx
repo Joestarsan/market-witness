@@ -125,7 +125,7 @@ export default function TradeInput({ onSubmit }: TradeInputProps) {
             <Image src="/brand/pyth-logo-symbol-light.svg" alt="" width={16} height={16} />
           </motion.div>
           <p className="text-pyth-text-dim/60 text-[11px] max-w-xs mx-auto leading-relaxed text-center mt-2">
-            Enter a trade and watch an Ace Attorney-style courtroom judge it using real oracle data
+            Enter a trade and watch a pixel-art courtroom judge it using real oracle data
           </p>
         </div>
 
