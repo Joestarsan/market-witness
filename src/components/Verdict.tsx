@@ -281,7 +281,7 @@ export default function Verdict({ result, asset, action, onRetry }: VerdictProps
               onClick={() => {
                 const verdict = result.verdict === "GUILTY" ? "GUILTY" : "NOT GUILTY";
                 const emoji = result.verdict === "GUILTY" ? "🔨" : "🎉";
-                const text = `${emoji} I just put my ${asset} ${action.toLowerCase()} trade on trial and the verdict is: ${verdict}!\n\nJudge your own trades with real oracle data:\nhttps://market-witness.vercel.app\n\nPowered by @PythNetwork`;
+                const text = `${emoji} I just put my $${asset} ${action.toLowerCase()} trade on trial and the verdict is: ${verdict}!\n\nJudge your own trades with real oracle data:\nhttps://market-witness.vercel.app`;
                 const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
                 window.open(twitterUrl, "_blank");
               }}

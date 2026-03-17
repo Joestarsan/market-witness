@@ -20,6 +20,17 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        <link rel="preload" as="image" href="/characters/chop-v2.png" />
+        <link rel="preload" as="image" href="/characters/planck-v2.png" />
+        <link rel="preload" as="image" href="/characters/pirb-v3.png" />
+        <link rel="preload" as="image" href="/characters/chop-react.png" />
+        <link rel="preload" as="image" href="/characters/planck-react.png" />
+        <link rel="preload" as="image" href="/characters/chop-happy.png" />
+        <link rel="preload" as="image" href="/characters/chop-sad.png" />
+        <link rel="preload" as="image" href="/characters/planck-happy.png" />
+        <link rel="preload" as="image" href="/characters/planck-sad.png" />
+      </head>
       <body className={`${pixelFont.variable} antialiased scanlines`}>
         {children}
       </body>

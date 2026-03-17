@@ -68,6 +68,12 @@ body {
   100% { opacity: 0; }
 }
 
+@keyframes calloutPop {
+  0% { opacity: 0; transform: rotate(-2deg) scale(0.8); }
+  50% { opacity: 1; transform: rotate(-2deg) scale(1.05); }
+  100% { opacity: 1; transform: rotate(-2deg) scale(1); }
+}
+
 /* Flash effect */
 @keyframes flash {
   0% { opacity: 1; }

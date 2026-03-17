@@ -212,47 +212,37 @@ export default function Trial({ result, asset, onComplete }: TrialProps) {
             zIndex: 9999,
             pointerEvents: "none",
             overflow: "hidden",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
           }}
         >
           {/* Glow flash */}
           <div
             style={{
               position: "absolute",
-              top: "50%",
-              left: "50%",
-              transform: "translate(-50%, -50%)",
-              width: "120vmax",
-              height: "120vmax",
-              borderRadius: "50%",
+              inset: 0,
               background: currentRoundData?.type === "prosecution"
                 ? "radial-gradient(circle, rgba(239,68,68,0.4) 0%, transparent 60%)"
                 : "radial-gradient(circle, rgba(14,210,141,0.4) 0%, transparent 60%)",
               animation: "fadeOut 1s forwards",
             }}
           />
-          {/* Callout badge - centered with no movement */}
+          {/* Callout badge - pure opacity, no scale/movement */}
           <div
+            className={`px-12 py-8 md:px-16 md:py-10 rounded-2xl ${
+              currentRoundData?.type === "prosecution"
+                ? "bg-pyth-red shadow-[0_0_100px_rgba(239,68,68,0.7)]"
+                : "bg-pyth-green shadow-[0_0_100px_rgba(14,210,141,0.7)]"
+            }`}
             style={{
-              position: "absolute",
-              top: "50%",
-              left: "50%",
-              transform: "translate(-50%, -50%) rotate(-2deg)",
+              animation: "calloutPop 0.3s ease-out",
+              transform: "rotate(-2deg)",
             }}
           >
-            <motion.div
-              initial={{ opacity: 0, scale: 0.3 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ type: "spring", damping: 15, stiffness: 300 }}
-              className={`px-16 py-10 rounded-2xl ${
-                currentRoundData?.type === "prosecution"
-                  ? "bg-pyth-red shadow-[0_0_100px_rgba(239,68,68,0.7)]"
-                  : "bg-pyth-green shadow-[0_0_100px_rgba(14,210,141,0.7)]"
-              }`}
-            >
-              <span className="font-[var(--font-pixel)] text-4xl md:text-7xl text-white objection-text whitespace-nowrap">
-                {showCallout}
-              </span>
-            </motion.div>
+            <span className="font-[var(--font-pixel)] text-3xl md:text-7xl text-white objection-text whitespace-nowrap">
+              {showCallout}
+            </span>
           </div>
         </div>
       )}
