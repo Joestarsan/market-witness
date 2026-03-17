@@ -187,9 +187,10 @@ export default function TradeInput({ onSubmit }: TradeInputProps) {
 
           {/* Open Date */}
           <div>
-            <label className="block text-[9px] text-pyth-text-dim font-[var(--font-pixel)] mb-2 uppercase">
+            <label className="block text-[9px] text-pyth-text-dim font-[var(--font-pixel)] mb-1 uppercase">
               When did you open?
             </label>
+            <span className="block text-[8px] text-pyth-text-dim/50 mb-2">Historical data available from ~Nov 2023</span>
             <input
               type="datetime-local"
               value={openDate}
