@@ -279,12 +279,15 @@ export default function Verdict({ result, asset, action, onRetry }: VerdictProps
             </button>
             <button
               onClick={() => {
-                // TODO: share functionality
-                alert("Share coming soon!");
+                const verdict = result.verdict === "GUILTY" ? "GUILTY" : "NOT GUILTY";
+                const emoji = result.verdict === "GUILTY" ? "🔨" : "🎉";
+                const text = `${emoji} I just put my ${asset} ${action.toLowerCase()} trade on trial and the verdict is: ${verdict}!\n\nJudge your own trades with real oracle data:\nhttps://market-witness.vercel.app\n\nPowered by @PythNetwork`;
+                const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
+                window.open(twitterUrl, "_blank");
               }}
               className="flex-1 h-12 bg-pyth-bg-card border border-pyth-border text-pyth-text rounded-lg font-[var(--font-pixel)] text-[9px] uppercase hover:border-pyth-purple transition-colors cursor-pointer"
             >
-              Share Verdict
+              Share on X
             </button>
           </motion.div>
 
