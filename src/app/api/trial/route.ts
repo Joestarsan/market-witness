@@ -62,14 +62,28 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "No content from AI" }, { status: 502 });
     }
 
-    // Parse JSON from response
+    // Parse JSON from response - try multiple extraction methods
     let jsonStr = content;
+
+    // Try code block first
     const codeBlockMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/);
     if (codeBlockMatch) {
       jsonStr = codeBlockMatch[1];
+    } else {
+      // Try finding JSON object directly
+      const jsonMatch = content.match(/\{[\s\S]*"rounds"[\s\S]*"verdict"[\s\S]*\}/);
+      if (jsonMatch) {
+        jsonStr = jsonMatch[0];
+      }
     }
 
-    const trial = JSON.parse(jsonStr.trim());
+    let trial;
+    try {
+      trial = JSON.parse(jsonStr.trim());
+    } catch {
+      console.error("Failed to parse AI response as JSON:", content.slice(0, 200));
+      return NextResponse.json({ error: "AI returned invalid format" }, { status: 502 });
+    }
 
     // Validate structure
     if (!trial.rounds || !trial.verdict || !trial.verdictText || trial.score === undefined) {
@@ -85,7 +99,8 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ trial });
   } catch (err) {
-    console.error("Trial generation error:", err);
-    return NextResponse.json({ error: "Failed to generate trial" }, { status: 500 });
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error("Trial generation error:", msg);
+    return NextResponse.json({ error: "Failed to generate trial", detail: msg }, { status: 500 });
   }
 }
