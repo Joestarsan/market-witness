@@ -1,6 +1,6 @@
 # The Market Witness
 
-**Team:** @[YOUR_DISCORD_HANDLE]
+**Team:** @joestar_san
 **Submitted:** March 2026
 
 ---
@@ -94,9 +94,12 @@ All API keys are protected server-side via Next.js API routes. The app includes 
 
 ## Content Contributions
 
-- **Public Post:** [INSERT REDDIT/DEV.TO POST URL]
-- **Technical Contribution:** [INSERT STACKOVERFLOW/GITHUB URL]
-- **Bonus - X Platform Post:** [INSERT TWITTER POST URL]
+- **Public Post (Dev.to):** https://dev.to/joestarsan/objection-this-app-puts-your-trades-on-trial-using-blockchain-data-1fh
+- **Technical Contribution (StackOverflow):** https://stackoverflow.com/questions/79915990/how-to-fetch-and-interpret-pyth-network-oracle-data-price-confidence-ema-in
+- **Bonus - X Platform Post:** https://x.com/Joestar_sann/status/2034656358730011085
+- **Bonus - Wikipedia Edits:**
+  - Decentralized finance: https://en.wikipedia.org/w/index.php?title=Decentralized_finance&diff=prev&oldid=1345729163
+  - Blockchain oracle: https://en.wikipedia.org/w/index.php?title=Blockchain_oracle&diff=prev&oldid=1345729882
 
 ---
 
